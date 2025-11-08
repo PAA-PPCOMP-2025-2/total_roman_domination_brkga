@@ -7,6 +7,9 @@ from typing import List
 from dataset_reader import leitura_matriz_adjacencia
 from visualização_gráfica import plot_trdf
 
+THRESHOLD_1 = 1/3
+THRESHOLD_2 = 2/3
+
 class BRKGA_TRD:
     def __init__(self, G: nx.Graph, pop_size=300, elite_frac=0.2, mutant_frac=0.2, generations=1000):
         self.G = G
@@ -18,7 +21,22 @@ class BRKGA_TRD:
         self.generations = generations
 
     def decode(self, chrom: List[float]) -> List[int]:
-        return [0 if g < 1/3 else 1 if g < 2/3 else 2 for g in chrom]
+        return [0 if g < THRESHOLD_1 else 1 if g < THRESHOLD_2 else 2 for g in chrom]
+
+    def code(self, f_list: List[int]) -> List[float]:
+        def random_float(min_val, max_val):
+            return min_val + (max_val - min_val) * random.random()
+
+        chrom = []
+        for f in f_list:
+            if f == 0:
+                chrom.append(random_float(0, THRESHOLD_1))
+            elif f == 1:
+                chrom.append(random_float(THRESHOLD_1, THRESHOLD_2))
+            else:
+                chrom.append(random_float(THRESHOLD_2, 1))
+
+        return chrom
 
     def is_valid_trdf(self, f_list: List[int]) -> bool:
         """Checa se a função f_list é uma TRDF total"""
@@ -73,6 +91,40 @@ class BRKGA_TRD:
         #             penalty += 10
 
         return total + penalty
+    
+    def heuristic_1(self, quantity):
+        chrom_list = []
+
+        for i in range(quantity):
+            f_list = {self.idx_to_node[i]: None for i in range(self.n)}
+            G_copy = self.G.copy()
+
+            while G_copy.number_of_nodes() > 0:
+                # etapa 1
+                vi = random.choice(list(G_copy.nodes()))
+                f_list[vi] = 2
+
+                # etapa 2
+                vj = random.choice(list(G_copy.neighbors(vi)))
+                f_list[vj] = 1
+                for viz in G_copy.neighbors(vi):
+                    if f_list[viz] == None:
+                        f_list[viz] = 0
+                
+                # etapa 3
+                for viz in list(G_copy.neighbors(vi)):
+                    G_copy.remove_node(viz)
+                G_copy.remove_node(vi)
+
+                # etapa 4
+                for vl in list(G_copy.nodes()):
+                    if G_copy.degree(vl) == 0:
+                        f_list[vl] = 1
+                        G_copy.remove_node(vl)
+
+            chrom_list.append(self.code(f_list))
+
+        return chrom_list
 
     def heuristic_gamma_3(self):
         """Gera solução com γtR = 3: 1 f=2 + 2 f=1 + 2 f=0"""
