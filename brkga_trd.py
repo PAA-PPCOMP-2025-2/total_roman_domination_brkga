@@ -1,7 +1,11 @@
 # brkga_trd.py
 import random
+import time
 import networkx as nx
 from typing import List
+
+from dataset_reader import leitura_matriz_adjacencia
+from visualização_gráfica import plot_trdf
 
 class BRKGA_TRD:
     def __init__(self, G: nx.Graph, pop_size=300, elite_frac=0.2, mutant_frac=0.2, generations=1000):
@@ -23,6 +27,10 @@ class BRKGA_TRD:
                 node = self.idx_to_node[i]
                 if not any(f_list[self.node_to_idx[n]] == 2 for n in self.G.neighbors(node)):
                     return False
+            elif val > 0:
+                node = self.idx_to_node[i]
+                if not any(f_list[self.node_to_idx[n]] > 0 for n in self.G.neighbors(node)):
+                    return False
         return True
     
     def repair(self, f_list: List[int]) -> List[int]:
@@ -35,24 +43,34 @@ class BRKGA_TRD:
                         if f_dict[u] != 2:
                             f_dict[u] = 2
                             break
+
+            elif f_dict[v] > 0:
+                if not any(f_dict[u] > 0 for u in self.G.neighbors(v)):
+                    # Escolhe primeiro vizinho que ainda não é > 0
+                    for u in self.G.neighbors(v):
+                        if f_dict[u] <= 0:
+                            f_dict[u] = 1
+                            break
         return [f_dict[self.idx_to_node[i]] for i in range(self.n)]
 
     def fitness(self, chrom: List[float]) -> float:
         f_list = self.decode(chrom)
         f_list = self.repair(f_list)
-        f_dict = {self.idx_to_node[i]: f_list[i] for i in range(self.n)}
         total = sum(f_list)
         penalty = 0
+        
+        # Muito custoso esse calculo de penalidade, tem diferença no resultado final?
 
-        for v in self.G.nodes():
-            val = f_dict[v]
-            neighbors = list(self.G.neighbors(v))
-            if val == 0:
-                if not any(f_dict[u] == 2 for u in neighbors):
-                    penalty += 10  # forte penalidade
-            else:
-                if not any(f_dict[u] > 0 for u in neighbors):
-                    penalty += 10
+        # f_dict = {self.idx_to_node[i]: f_list[i] for i in range(self.n)}
+        # for v in self.G.nodes():
+        #     val = f_dict[v]
+        #     neighbors = list(self.G.neighbors(v))
+        #     if val == 0:
+        #         if not any(f_dict[u] == 2 for u in neighbors):
+        #             penalty += 10  # forte penalidade
+        #     else:
+        #         if not any(f_dict[u] > 0 for u in neighbors):
+        #             penalty += 10
 
         return total + penalty
 
@@ -120,8 +138,30 @@ class BRKGA_TRD:
                 best_fit, best_chrom = min((self.fitness(c), c) for c in pop)
                 print(f"Gen {gen:3d} | γtR ≈ {best_fit}")
 
+                if self.G.number_of_nodes() >= 3 and best_fit <= 3:
+                    print("Solução ótima encontrada!")
+                    break
+
         # Melhor solução final
         best_fit, best_chrom = min((self.fitness(c), c) for c in pop)
         best_list = self.repair(self.decode(best_chrom))
         best_sol = {self.idx_to_node[i]: best_list[i] for i in range(self.n)}
         return best_fit, best_sol
+
+if __name__ == "__main__":
+    graphs = {
+        # "C1000-9": leitura_matriz_adjacencia("datasets/DIMACS/C1000-9.mtx"),
+        # "johnson8-2-4": leitura_matriz_adjacencia("datasets/DIMACS/johnson8-2-4.mtx"),
+        "MANN-a9": leitura_matriz_adjacencia("datasets/DIMACS/MANN-a9.mtx"),
+    }
+
+    for name, G in graphs.items():
+        brkga_trd = BRKGA_TRD(G, pop_size=300, elite_frac=0.2, mutant_frac=0.2, generations=1000)
+
+        t0 = time.time()
+        w, sol = brkga_trd.run()
+        t1 = time.time()
+        print(f'Tempo de processamento: {t1-t0} segundos')
+
+        print(f"{name}: γtR = {w}, solução = {sol}")
+        plot_trdf(G, sol, title=name)
