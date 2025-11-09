@@ -42,30 +42,82 @@ class BRKGA_TRD:
         return chrom
 
     def is_valid_trdf(self, f_list: List[int]) -> bool:
-        """Checa se a função f_list é uma TRDF total"""
-        for i, val in enumerate(f_list):
-            if val == 0:
-                node = self.idx_to_node[i]
-                if not any(f_list[self.node_to_idx[n]] == 2 for n in self.G.neighbors(node)):
-                    return False
-            elif val > 0:
-                node = self.idx_to_node[i]
-                if not any(f_list[self.node_to_idx[n]] > 0 for n in self.G.neighbors(node)):
-                    return False
-        return True
-    
-    def repair(self, f_list: List[int]) -> List[int]:
-        f_dict = {self.idx_to_node[i]: f_list[i] for i in range(self.n)}
+        checados = [False for _ in range(self.n)]
+
+        # F(v) = 2
         for v in self.G.nodes():
-            if f_dict[v] == 0:
-                if not any(f_dict[u] == 2 for u in self.G.neighbors(v)):
-                    f_dict[self.G.neighbors(v).__next__()] = 2
+            if checados[v]: continue
+            if f_list[v] == 2:
+                checados[v] = True
+                possui_vizinho_apoio = False
+                for u in self.G.neighbors(v):
+                    checados[u] = True
+                    if (f_list[u] > 0):
+                        possui_vizinho_apoio = True
+                if not possui_vizinho_apoio:
+                    return False
 
-            elif f_dict[v] > 0:
-                if not any(f_dict[u] > 0 for u in self.G.neighbors(v)):
-                    f_dict[self.G.neighbors(v).__next__()] = 1
+        # F(v) = 1
+        for v in self.G.nodes():
+            if checados[v]: continue
+            if f_list[v] == 1:
+                checados[v] = True
+                possui_vizinho_apoio = False
+                for u in self.G.neighbors(v):
+                    if f_list[u] > 0:
+                        possui_vizinho_apoio = True
+                        checados[u] = True
+                if not possui_vizinho_apoio:
+                    return False
 
-        return [f_dict[self.idx_to_node[i]] for i in range(self.n)]
+        # F(v) = 0
+        for v in self.G.nodes():
+            if checados[v]: continue
+            return False
+
+        return True
+
+    def repair(self, f_list: List[int]) -> List[int]:
+        checados = [False for _ in range(self.n)]
+
+        # F(v) = 2
+        for v in self.G.nodes():
+            if checados[v]: continue
+            if f_list[v] == 2:
+                checados[v] = True
+                possui_vizinho_apoio = False
+                for u in self.G.neighbors(v):
+                    checados[u] = True
+                    if (f_list[u] > 0):
+                        possui_vizinho_apoio = True
+                if not possui_vizinho_apoio:
+                    f_list[u] = 1
+
+        # F(v) = 1
+        for v in self.G.nodes():
+            if checados[v]: continue
+            if f_list[v] == 1:
+                checados[v] = True
+                possui_vizinho_apoio = False
+                for u in self.G.neighbors(v):
+                    if f_list[u] > 0:
+                        possui_vizinho_apoio = True
+                        checados[u] = True
+                if not possui_vizinho_apoio:
+                    f_list[u] = 1
+                    checados[u] = True
+
+        # F(v) = 0
+        for v in self.G.nodes():
+            if checados[v]: continue
+            if f_list[v] == 0:
+                f_list[v] = 2
+                checados[v] = True
+                for u in self.G.neighbors(v):
+                    checados[u] = True
+                f_list[u] = 1
+
+        return f_list
 
     def fitness(self, chrom: List[float]) -> float:
         f_list = self.decode(chrom)
@@ -233,5 +285,6 @@ if __name__ == "__main__":
         t1 = time.time()
         print(f'Tempo de processamento: {t1-t0} segundos')
 
-        print(f"{name}: γtR = {w}, solução = {sol.values()}")
+        print(f"{name}: γtR = {w}")
+        # print(f"solução = {sol.values()}")
         # plot_trdf(G, sol, title=name)
