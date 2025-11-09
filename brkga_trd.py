@@ -11,6 +11,7 @@ STEP_GENS = 10
 MAX_GENS_WITHOUT_IMPROVEMENT = 100 # no artigo utilizou 363
 THRESHOLD_1 = 1/3
 THRESHOLD_2 = 2/3
+DEBUG = 0
 
 class BRKGA_TRD:
     def __init__(self, G: nx.Graph, pop_size=300, elite_frac=0.2, mutant_frac=0.2, generations=1000):
@@ -58,19 +59,12 @@ class BRKGA_TRD:
         for v in self.G.nodes():
             if f_dict[v] == 0:
                 if not any(f_dict[u] == 2 for u in self.G.neighbors(v)):
-                    # Escolhe primeiro vizinho que ainda não é 2
-                    for u in self.G.neighbors(v):
-                        if f_dict[u] != 2:
-                            f_dict[u] = 2
-                            break
+                    f_dict[self.G.neighbors(v).__next__()] = 2
 
             elif f_dict[v] > 0:
                 if not any(f_dict[u] > 0 for u in self.G.neighbors(v)):
-                    # Escolhe primeiro vizinho que ainda não é > 0
-                    for u in self.G.neighbors(v):
-                        if f_dict[u] <= 0:
-                            f_dict[u] = 1
-                            break
+                    f_dict[self.G.neighbors(v).__next__()] = 1
+
         return [f_dict[self.idx_to_node[i]] for i in range(self.n)]
 
     def fitness(self, chrom: List[float]) -> float:
@@ -168,11 +162,14 @@ class BRKGA_TRD:
         best_chrom = None
         gens_without_improvement = 0
         pop = self.generate_population(self.pop_size)
+
+        # avaliação da primeira geração
+        if self.generations > 0:
+            current_scored = [(self.fitness(c), c) for c in pop]
+
         for gen in range(self.generations):
-            # Avaliar população
-            scored = [(self.fitness(c), c) for c in pop]
-            scored.sort(key=lambda x: x[0])
-            elites = [c for _, c in scored[:self.elite_size]]
+            current_scored.sort(key=lambda x: x[0])
+            elites = [c for _, c in current_scored[:self.elite_size]]
 
             # Reprodução
             new_pop = elites.copy()
@@ -188,7 +185,8 @@ class BRKGA_TRD:
             pop = new_pop
 
             if gen % STEP_GENS == 0 or gen == self.generations-1:
-                new_best_fit, new_best_chrom = min((self.fitness(c), c) for c in pop)
+                current_scored = [(self.fitness(c), c) for c in pop]
+                new_best_fit, new_best_chrom = min(current_scored)
                 print(f"Gen {gen:3d} | γtR ≈ {new_best_fit}")
 
                 if not best_chrom is None and  new_best_fit == best_fit:
@@ -208,13 +206,14 @@ class BRKGA_TRD:
                     break
 
         # Melhor solução final
-        best_fit, best_chrom = min((self.fitness(c), c) for c in pop)
+        best_fit, best_chrom = min(current_scored)
         best_list = self.repair(self.decode(best_chrom))
         best_sol = {self.idx_to_node[i]: best_list[i] for i in range(self.n)}
         return best_fit, best_sol
 
 if __name__ == "__main__":
     graphs = {
+        # "MANN-a81": leitura_matriz_adjacencia("datasets/DIMACS/MANN-a81.mtx"),
         # "C1000-9": leitura_matriz_adjacencia("datasets/DIMACS/C1000-9.mtx"),
         # "johnson8-2-4": leitura_matriz_adjacencia("datasets/DIMACS/johnson8-2-4.mtx"),
         "MANN-a9": leitura_matriz_adjacencia("datasets/DIMACS/MANN-a9.mtx"),
