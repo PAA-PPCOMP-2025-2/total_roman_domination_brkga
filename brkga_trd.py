@@ -176,7 +176,64 @@ class BRKGA_TRD:
             chrom_list.append(self.code(f_list))
 
         return chrom_list
+    
+    # HEURÍSTICA 2
+    def heuristic_2(self) -> List[float]:
+        f_list = self.decode(self.heuristic_1())
+        for i in range(self.n):
+            if f_list[i] == 2:
+                neighbors = list(self.G.neighbors(self.idx_to_node[i]))
+                if len(neighbors) >= 2:
+                    u1, u2 = neighbors[0], neighbors[1]
+                    u1_idx, u2_idx = self.node_to_idx[u1], self.node_to_idx[u2]
+                    if f_list[u1_idx] <= 1 and f_list[u2_idx] <= 1:
+                        temp = f_list.copy()
+                        temp[i] = 0
+                        temp[u1_idx] = max(temp[u1_idx], 1)
+                        temp[u2_idx] = max(temp[u2_idx], 1)
+                        if self.is_valid_trdf(temp) and sum(temp) < sum(f_list):
+                            f_list = temp
+        return self.code(f_list)
 
+    # HEURÍSTICA 3
+    def heuristic_3(self) -> List[float]:
+        f_list = self.decode(self.heuristic_1())
+        for i in range(self.n):
+            if f_list[i] == 1:
+                v = self.idx_to_node[i]
+                neighbors = list(self.G.neighbors(v))
+                if any(f_list[self.node_to_idx[u]] == 2 for u in neighbors):
+                    temp = f_list.copy()
+                    temp[i] = 0
+                    if self.is_valid_trdf(temp):
+                        f_list = temp
+        return self.code(f_list)
+
+    # HEURÍSTICA 4
+    def heuristic_4(self) -> List[float]:
+        f_list = self.decode(self.heuristic_1())
+        for i in range(self.n):
+            if f_list[i] == 2:
+                v = self.idx_to_node[i]
+                for u in self.G.neighbors(v):
+                    u_idx = self.node_to_idx[u]
+                    if f_list[u_idx] == 0:
+                        temp = f_list.copy()
+                        temp[i] = 0
+                        temp[u_idx] = 2
+                        if self.is_valid_trdf(temp) and sum(temp) <= sum(f_list):
+                            f_list = temp
+        return self.code(f_list)
+
+    # HEURÍSTICA 5
+    def heuristic_5(self) -> List[float]:
+        chrom = self.heuristic_1()
+        for h in [self.heuristic_2, self.heuristic_3, self.heuristic_4]:
+            candidate = h()
+            if self.fitness(candidate) < self.fitness(chrom):
+                chrom = candidate
+        return chrom
+    
     def heuristic_gamma_3(self):
         """Gera solução com γtR = 3: 1 f=2 + 2 f=1 + 2 f=0"""
         f_list = [0] * self.n
@@ -287,4 +344,5 @@ if __name__ == "__main__":
 
         print(f"{name}: γtR = {w}")
         # print(f"solução = {sol.values()}")
+
         # plot_trdf(G, sol, title=name)
