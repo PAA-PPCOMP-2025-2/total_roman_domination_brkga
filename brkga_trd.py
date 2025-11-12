@@ -140,6 +140,7 @@ class BRKGA_TRD:
 
         return total + penalty
     
+    # HEURÍSTICA 1 (ARTIGO)
     def heuristic_1(self, quantity):
         chrom_list = []
 
@@ -177,10 +178,109 @@ class BRKGA_TRD:
 
         return chrom_list
     
-    # HEURÍSTICA 2
-    def heuristic_2(self) -> List[float]:
-        f_list = self.decode(self.heuristic_1())
-        for i in range(self.n):
+    # HEURÍSTICA 2 (ARTIGO)
+    def heuristic_2(self, quantity):
+        chrom_list = []
+
+        for i in range(quantity):
+            f_list = {self.idx_to_node[i]: None for i in range(self.n)}
+
+            verticie_atual = 0
+            while None in f_list.values():
+                # seleciona o proximo que ainda nao foi marcado
+                # como os vertices ja estão ordenados pelo seu grau, então vai selecionar o vértice de maior grau que ainda não foi marcado
+                while f_list[verticie_atual] is not None:
+                    verticie_atual += 1
+
+                f_list_vizinhos = {n: f_list[n] for n in self.G.neighbors(verticie_atual)}
+
+                if len([f for f in f_list_vizinhos.values() if f == None]) > 0:
+                    # etapa 1
+                    vi = verticie_atual
+                    f_list[vi] = 2
+
+                    # etapa 2
+                    vj = random.choice(list(self.G.neighbors(vi)))
+                    f_list[vj] = 1
+                    for viz in self.G.neighbors(vi):
+                        if f_list[viz] == None:
+                            f_list[viz] = 0
+                    
+                    # etapa 3 nao foi necessaria nesta implementação, pois não é criado uma cópia do grafo
+                    
+                # etapa 4
+                else:
+                    f_list[verticie_atual] = 1
+                    
+                    if len([f for f in f_list_vizinhos.values() if f in (1,2)]) == 0:
+                        f_list[random.choice(list(self.G.neighbors(verticie_atual)))] = 1
+
+            chrom_list.append(self.code(f_list))
+
+        return chrom_list
+    
+    # HEURÍSTICA 3 (ARTIGO)
+    def heuristic_3(self, quantity):
+        chrom_list = []
+
+        for i in range(quantity):
+            f_list = {self.idx_to_node[i]: None for i in range(self.n)}
+
+            verticie_atual = 0
+            while None in f_list.values():
+                # seleciona o proximo que ainda nao foi marcado
+                # como os vertices ja estão ordenados pelo seu grau, então vai selecionar o vértice de maior grau que ainda não foi marcado
+                while f_list[verticie_atual] is not None:
+                    verticie_atual += 1
+
+                f_list_vizinhos = {n: f_list[n] for n in self.G.neighbors(verticie_atual)}
+
+                if len([f for f in f_list_vizinhos.values() if f == None]) > 0:
+                    # etapa 1
+                    vi = verticie_atual
+                    f_list[vi] = 2
+
+                    # etapa 2
+                    vj = random.choice(list(self.G.neighbors(vi)))
+                    f_list[vj] = 1
+                    for viz in self.G.neighbors(vi):
+                        if f_list[viz] == None:
+                            f_list[viz] = 0
+                    
+                    # etapa 3 nao foi necessaria nesta implementação, pois não é criado uma cópia do grafo
+                    
+                # etapa 4
+                else:
+                    f_list[verticie_atual] = 1
+                    
+                    if len([f for f in f_list_vizinhos.values() if f in (1,2)]) == 0:
+                        f_list[min(list(self.G.neighbors(verticie_atual)))] = 1
+
+            chrom_list.append(self.code(f_list))
+
+        return chrom_list
+    
+    # HEURÍSTICA 4 (ARTIGO)
+    def heuristic_4(self, quantity):
+        # Não está claro como foi implementada essa heurística no artigo original
+
+        return self.heuristic_1(quantity)
+    
+    # HEURÍSTICA 5 (ARTIGO)
+    def heuristic_5(self, quantity):
+        chrom_list = []
+
+        for i in range(quantity):
+            f_list = {self.idx_to_node[i]: 1 for i in range(self.n)}
+
+            chrom_list.append(self.code(f_list))
+
+        return chrom_list
+    
+    # HEURÍSTICA 2 (ALTERNATIVA)
+    def heuristic_2_alt(self, quantity) -> List[float]:
+        f_list = [self.decode(chrom) for chrom in self.heuristic_1(quantity)]
+        for i in range(quantity):
             if f_list[i] == 2:
                 neighbors = list(self.G.neighbors(self.idx_to_node[i]))
                 if len(neighbors) >= 2:
@@ -193,12 +293,12 @@ class BRKGA_TRD:
                         temp[u2_idx] = max(temp[u2_idx], 1)
                         if self.is_valid_trdf(temp) and sum(temp) < sum(f_list):
                             f_list = temp
-        return self.code(f_list)
+        return [self.code(chrom) for chrom in f_list]
 
-    # HEURÍSTICA 3
-    def heuristic_3(self) -> List[float]:
-        f_list = self.decode(self.heuristic_1())
-        for i in range(self.n):
+    # HEURÍSTICA 3 (ALTERNATIVA)
+    def heuristic_3_alt(self, quantity) -> List[float]:
+        f_list = self.decode(self.heuristic_1(quantity))
+        for i in range(quantity):
             if f_list[i] == 1:
                 v = self.idx_to_node[i]
                 neighbors = list(self.G.neighbors(v))
@@ -209,10 +309,10 @@ class BRKGA_TRD:
                         f_list = temp
         return self.code(f_list)
 
-    # HEURÍSTICA 4
-    def heuristic_4(self) -> List[float]:
-        f_list = self.decode(self.heuristic_1())
-        for i in range(self.n):
+    # HEURÍSTICA 4 (ALTERNATIVA)
+    def heuristic_4_alt(self, quantity) -> List[float]:
+        f_list = self.decode(self.heuristic_1(quantity))
+        for i in range(quantity):
             if f_list[i] == 2:
                 v = self.idx_to_node[i]
                 for u in self.G.neighbors(v):
@@ -225,16 +325,17 @@ class BRKGA_TRD:
                             f_list = temp
         return self.code(f_list)
 
-    # HEURÍSTICA 5
-    def heuristic_5(self) -> List[float]:
-        chrom = self.heuristic_1()
+    # HEURÍSTICA 5 (ALTERNATIVA)
+    def heuristic_5_alt(self, quantity) -> List[float]:
+        chrom = self.heuristic_1(quantity)
         for h in [self.heuristic_2, self.heuristic_3, self.heuristic_4]:
             candidate = h()
             if self.fitness(candidate) < self.fitness(chrom):
                 chrom = candidate
         return chrom
     
-    def heuristic_gamma_3(self):
+    # HEURÍSTICA 6 (ALTERNATIVA)
+    def heuristic_6_alt(self):
         """Gera solução com γtR = 3: 1 f=2 + 2 f=1 + 2 f=0"""
         f_list = [0] * self.n
         if self.n < 5: return f_list
@@ -250,7 +351,8 @@ class BRKGA_TRD:
         
         return f_list
 
-    def heuristic_gamma_2(self):
+    # HEURÍSTICA 7 (ALTERNATIVA)
+    def heuristic_7_alt(self):
         """Gera solução com γtR = 2: 1 f=2 + resto f=0"""
         f_list = [0] * self.n
         if self.n == 0: return f_list
@@ -258,7 +360,26 @@ class BRKGA_TRD:
         return f_list
 
     def generate_population(self, quantity):
-        return self.heuristic_1(quantity)
+        proporcao_heuristica_1 = 0.6
+        proporcao_heuristica_2 = 0.1
+        proporcao_heuristica_3 = 0.1
+        proporcao_heuristica_4 = 0.1
+        proporcao_heuristica_5 = 0.1
+
+        pop = []
+        pop.extend(self.heuristic_1(int(quantity * proporcao_heuristica_1)))
+        pop.extend(self.heuristic_2(int(quantity * proporcao_heuristica_2)))
+        pop.extend(self.heuristic_3(int(quantity * proporcao_heuristica_3)))
+        pop.extend(self.heuristic_4(int(quantity * proporcao_heuristica_4))) # Não implementada, utilizando a heurística 1
+        pop.extend(self.heuristic_5(int(quantity * proporcao_heuristica_5)))
+
+        # Devido arredondamentos, pode ser que a população gerada seja menor que o tamanho desejado
+        while len(pop) < quantity:
+
+            # Preenche o restante com soluções da heurística 1
+            pop.extend(self.heuristic_1(quantity - len(pop)))
+
+        return pop
 
     def biased_crossover(self, p1: List[float], p2: List[float]) -> List[float]:
         return [p1[i] if random.random() < self.bias else p2[i] for i in range(self.n)]
