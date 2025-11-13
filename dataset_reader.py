@@ -35,23 +35,23 @@ def leitura_matriz_adjacencia(arquivo):
 
     grafo = [adjacencias[i] for i in range(n)]
 
-    # O objetivo é ordenar o grafo pelos vértices com maior número de arestas
-    # Como eles tem maior impacto na construção da solução, eles podem impor mais restrições
+    # # O objetivo é ordenar o grafo pelos vértices com maior número de arestas
+    # # Como eles tem maior impacto na construção da solução, eles podem impor mais restrições
 
-    # Ordenar vértices pelo grau decrescente
-    ordem = sorted(range(n), key=lambda x: len(grafo[x]), reverse=True)
+    # # Ordenar vértices pelo grau decrescente
+    # ordem = sorted(range(n), key=lambda x: len(grafo[x]), reverse=True)
 
-    # Cria um mapeamento antigo índice -> novo índice
-    mapeamento = {antigo: novo for novo, antigo in enumerate(ordem)}
+    # # Cria um mapeamento antigo índice -> novo índice
+    # mapeamento = {antigo: novo for novo, antigo in enumerate(ordem)}
 
-    # Reorganiza a lista de adjacência com base na nova ordem e atualiza os vizinhos
-    grafo_ordenado = []
-    for i in ordem:
-        novos_vizinhos = [mapeamento[v] for v in grafo[i]]
-        grafo_ordenado.append(novos_vizinhos)
+    # # Reorganiza a lista de adjacência com base na nova ordem e atualiza os vizinhos
+    # grafo_ordenado = []
+    # for i in ordem:
+    #     novos_vizinhos = [mapeamento[v] for v in grafo[i]]
+    #     grafo_ordenado.append(novos_vizinhos)
 
-    g = nx.from_dict_of_lists({i: grafo_ordenado[i] for i in range(len(grafo_ordenado))})
+    # g = nx.from_dict_of_lists({i: grafo_ordenado[i] for i in range(len(grafo_ordenado))})
 
     print(f"Leitura concluída [{arquivo}]")
 
-    return g
+    return grafo
