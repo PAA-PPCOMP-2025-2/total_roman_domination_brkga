@@ -56,16 +56,22 @@ class GA:
             new_pop = elites.copy()
             while len(new_pop) < self.pop_size:
                 # k-tournament selection
-                candidatos = random.sample(pop, self.tam_torneio)
-                candidatos.sort(key=lambda x: self.fitness(x))
-                p1 = candidatos[0]
+                idx_candidatos = random.sample(range(self.pop_size), self.tam_torneio)
+                idx_candidatos.sort(key=lambda x: self.fitness(pop[x]))
+                idx_p1 = idx_candidatos[0]
                 
                 # k-tournament selection
-                p2 = None
-                while p2 == None or p2 == p1:
-                    candidatos = random.sample(pop, self.tam_torneio)
-                    candidatos.sort(key=lambda x: self.fitness(x))
-                    p2 = candidatos[0]
+                idx_candidatos = random.sample(range(self.pop_size), self.tam_torneio)
+                idx_candidatos.sort(key=lambda x: self.fitness(pop[x]))
+                idx_p2 = idx_candidatos[0]
+                
+                # se os dois progenitores são o mesmo individuo, p2 passa a ser o segundo candidato do torneio
+                if idx_p1 == idx_p2:
+                    idx_p2 = idx_candidatos[1]
+                    # idx_p2 = (idx_p2 + 1) % self.pop_size
+
+                p1 = pop[idx_p1]                    
+                p2 = pop[idx_p2]                    
 
                 # one-point crossover
                 ponto_corte = random.randint(1, len(p1)-1)
@@ -77,16 +83,16 @@ class GA:
                 new_pop.append(child)
             
             # Mutantes
-            for i,chrom in enumerate(new_pop):
+            for i in range(len(new_pop)):
                 gene_alterado = False
-                for j,gene in enumerate(chrom):
+                for j in range(len(new_pop[i])):
                     r = random.random()
                     if r < self.taxa_mutacao:
-                        chrom[j] = 0
+                        new_pop[i][j] = 0
                         gene_alterado = True
                 
                 if gene_alterado:
-                    new_pop[i] = self.repair(chrom)
+                    new_pop[i] = self.repair(new_pop[i])
 
             pop = new_pop
 
