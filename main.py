@@ -83,8 +83,9 @@ if __name__ == "__main__":
     graphs = listar_arquivos_diretorio("datasets/random")
 
     # metodos = ["artigo_ga"]
-    metodos = ["artigo_ga", "artigo_brkga", "guloso_brkga"]
+    # metodos = ["artigo_ga", "artigo_brkga", "guloso_brkga"]
     # metodos = ["artigo_brkga", "guloso_brkga"]
+    metodos = ["artigo_ga", "guloso_brkga"]
 
     texto_export = ""
 
