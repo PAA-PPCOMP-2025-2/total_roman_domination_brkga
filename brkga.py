@@ -86,17 +86,3 @@ class BRKGA:
             print(f"Gen {gen:3d} | best fit = {best_fit}")
 
         return best_fit, best_chrom
-
-if __name__ == "__main__":
-    brkga = BRKGA(
-        n=10,
-        pop_size=100,
-        elite_frac=0.2,
-        mutant_frac=0.2,
-        generations=10000,
-        optimal_solution=0.0
-    )
-
-    best_fit, best_chrom = brkga.run()
-    print("Best fitness:", best_fit)
-    print("Best chromosome:", best_chrom)

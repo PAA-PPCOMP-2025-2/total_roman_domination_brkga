@@ -53,6 +53,22 @@ def decode(adjacencias, chrom):
     
     return rotulos
 
+def decode_ordem(adjacencias, ordem):
+    rotulos = [0 for _ in ordem]
+
+    for i in range(len(ordem)):
+        rotulos[ordem[i]] = 2
+        if adjacency_list_is_valid_trdf(adjacencias, rotulos):
+            break
+    
+    for j in range(i,-1,-1):
+        rotulos[ordem[j]] = 1
+        if not adjacency_list_is_valid_trdf(adjacencias, rotulos):
+            rotulos[ordem[j]] = 2
+            break
+    
+    return rotulos
+
 def fitness_guloso(adjacencias):
     def guloso(chrom):
         return sum(decode(adjacencias, chrom))
